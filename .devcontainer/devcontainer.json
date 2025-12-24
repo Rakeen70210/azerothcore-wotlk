@@ -7,7 +7,10 @@
   // the docker-compose files (including the .override.yml)
   // https://github.com/microsoft/vscode-remote-release/issues/1080#issuecomment-824213014
   // it requires vscode 1.57+
-  "dockerComposeFile": [],
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "docker-compose.yml"
+  ],
   // The 'service' property is the name of the service for the container that VS Code should
   // use. Update this value and .devcontainer/docker-compose.yml to the real service name.
   "service": "ac-dev-server",

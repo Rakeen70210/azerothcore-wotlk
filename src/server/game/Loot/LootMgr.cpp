@@ -1515,9 +1515,6 @@ void LootTemplate::LootGroup::CheckLootRefs(LootStore const& lootstore, uint32 I
         LootStoreItem* item = *ieItr;
         if (item->reference)
         {
-            if (item->mincount != item->maxcount)
-                LootTemplates_Reference.ReportInvalidCount(std::abs(item->reference), lootstore.GetName(), Id, item->itemid, item->mincount, item->maxcount);
-
             if (!LootTemplates_Reference.GetLootFor(std::abs(item->reference)))
                 LootTemplates_Reference.ReportNonExistingId(std::abs(item->reference), lootstore.GetName(), item->itemid);
             else if (ref_set)
@@ -1530,9 +1527,6 @@ void LootTemplate::LootGroup::CheckLootRefs(LootStore const& lootstore, uint32 I
         LootStoreItem* item = *ieItr;
         if (item->reference)
         {
-            if (item->mincount != item->maxcount)
-                LootTemplates_Reference.ReportInvalidCount(std::abs(item->reference), lootstore.GetName(), Id, item->itemid, item->mincount, item->maxcount);
-
             if (!LootTemplates_Reference.GetLootFor(std::abs(item->reference)))
                 LootTemplates_Reference.ReportNonExistingId(std::abs(item->reference), lootstore.GetName(), item->itemid);
             else if (ref_set)
@@ -1735,7 +1729,8 @@ void LootTemplate::Process(Loot& loot, LootStore const& store, uint16 lootMode, 
             if (!Referenced)
                 continue;                                       // Error message already printed at loading stage
 
-            uint32 maxcount = uint32(float(item->maxcount) * sWorld->getRate(RATE_DROP_ITEM_REFERENCED_AMOUNT));
+            uint32 count = urand(item->mincount, item->maxcount);
+            uint32 maxcount = uint32(float(count) * sWorld->getRate(RATE_DROP_ITEM_REFERENCED_AMOUNT));
             sScriptMgr->OnAfterRefCount(player, loot, rate, lootMode, item, maxcount, store);
             for (uint32 loop = 0; loop < maxcount; ++loop)      // Ref multiplicator
                 // we're no longer in the top level, so isTopLevel is false
@@ -1875,9 +1870,6 @@ void LootTemplate::CheckLootRefs(LootStore const& lootstore, uint32 Id, LootIdSe
         LootStoreItem* item = *ieItr;
         if (item->reference)
         {
-            if (item->mincount != item->maxcount)
-                LootTemplates_Reference.ReportInvalidCount(std::abs(item->reference), lootstore.GetName(), Id, item->itemid, item->mincount, item->maxcount);
-
             if (!LootTemplates_Reference.GetLootFor(std::abs(item->reference)))
                 LootTemplates_Reference.ReportNonExistingId(std::abs(item->reference), lootstore.GetName(), item->itemid);
             else if (ref_set)
