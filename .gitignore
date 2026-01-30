@@ -102,3 +102,6 @@ local.properties
 #  !modules/yourmodule
 #
 # ==================
+
+# Un-ignore mod-playerbots submodule
+!modules/mod-playerbots
