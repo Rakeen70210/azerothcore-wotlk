@@ -1,0 +1,126 @@
+name: Update submodules (commit to Playerbot)
+
+on:
+  schedule:
+    - cron: '30 2 * * *' # daily at 02:30 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    env:
+      SUBMODULE_PUSH_TOKEN: ${{ secrets.SUBMODULE_PUSH_TOKEN }}
+    steps:
+      - name: Checkout repo with submodules
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Ensure Playerbot branch
+        run: |
+          set -e
+          if git rev-parse --verify Playerbot >/dev/null 2>&1; then
+            git checkout Playerbot
+            git reset --hard origin/Playerbot || true
+          else
+            git checkout -b Playerbot origin/Playerbot
+          fi
+
+      - name: Update submodules to upstream (fast-forward)
+        id: update-submodules
+        run: |
+          set -e
+          updated=false
+
+          # iterate submodule paths from .gitmodules
+          for sub in $(git config --file .gitmodules --name-only --get-regexp path | awk '{print $2}'); do
+            echo "Processing submodule: $sub"
+            pushd "$sub"
+
+            # ensure upstream remote exists (try to derive from .gitmodules)
+            if ! git remote get-url upstream >/dev/null 2>&1; then
+              url=$(git config --file ../.gitmodules --get submodule.$sub.url || true)
+              if [ -n "$url" ]; then
+                url=$(echo "$url" | sed 's#git@github.com:#https://github.com/#')
+                git remote add upstream "$url" || true
+              fi
+            fi
+
+            git fetch origin || true
+            git fetch upstream || true
+
+            target=""
+            if git show-ref --verify --quiet refs/remotes/upstream/master; then
+              target="upstream/master"
+            elif git show-ref --verify --quiet refs/remotes/upstream/Playerbot; then
+              target="upstream/Playerbot"
+            fi
+
+            if [ -z "$target" ]; then
+              echo "No upstream branch found for $sub; skipping"
+              popd
+              continue
+            fi
+
+            # ensure a local master branch exists
+            git rev-parse --verify master >/dev/null 2>&1 || git checkout -b master
+
+            if git merge --ff-only "$target"; then
+              echo "Fast-forwarded $sub to $target"
+
+              if [ -n "${SUBMODULE_PUSH_TOKEN}" ]; then
+                url=$(git remote get-url origin)
+                owner_repo=$(echo "$url" | sed -E 's#.*[:/]([^/]+/[^/]+)(\.git)?#\1#')
+                push_url="https://x-access-token:${SUBMODULE_PUSH_TOKEN}@github.com/${owner_repo}.git"
+                git remote set-url --push origin "$push_url"
+                git push origin master || true
+                echo "Pushed $sub master to fork origin"
+              else
+                echo "SUBMODULE_PUSH_TOKEN not set; not updating origin for $sub"
+              fi
+            else
+              echo "Could not fast-forward $sub; skipping"
+            fi
+
+            popd
+          done
+
+          # detect changes in superproject (submodule pointer updates)
+          if git status --porcelain | grep -q '^ M modules/'; then
+            git add modules/* || true
+            git commit -m "Auto-update submodules to latest upstream" || true
+
+            if git push origin Playerbot; then
+              updated=true
+            else
+              # fallback: create a branch and push PR
+              branch="update-submodules-$(date -u +%Y%m%d%H%M%S)"
+              git push -u origin HEAD:$branch
+              echo "created_branch=$branch" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "No submodule pointer changes"
+          fi
+
+          echo "updated=$updated" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Create PR if needed
+        if: steps.update-submodules.outputs.updated == 'false' && steps.update-submodules.outputs.created_branch != ''
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "Update submodules to upstream"
+          body: "Automatic: updated submodules using upstream changes. Please review and merge."
+          base: Playerbot
+          head: ${{ steps.update-submodules.outputs.created_branch }}

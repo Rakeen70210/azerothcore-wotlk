@@ -1,0 +1,73 @@
+name: Keep fork in sync (Playerbot)
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # daily at 02:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream
+        run: git remote add upstream https://github.com/azerothcore/azerothcore-wotlk.git
+
+      - name: Fetch upstream
+        run: git fetch upstream --no-tags
+
+      - name: Try fast-forward or create PR
+        id: try-merge
+        run: |
+          set -e
+
+          # Ensure Playerbot branch exists locally and track origin
+          if git rev-parse --verify Playerbot >/dev/null 2>&1; then
+            git checkout Playerbot
+          else
+            git checkout -b Playerbot origin/Playerbot
+          fi
+
+          # Prefer upstream/Playerbot if it exists, otherwise upstream/master
+          if git show-ref --verify --quiet refs/remotes/upstream/Playerbot; then
+            base_ref=upstream/Playerbot
+          else
+            base_ref=upstream/master
+          fi
+
+          echo "Base ref is $base_ref"
+
+          if git merge --ff-only "$base_ref"; then
+            git push origin Playerbot
+            echo "merged=true" >> $GITHUB_OUTPUT
+          else
+            branch="upstream-sync-$(date -u +%Y%m%d%H%M%S)"
+            git checkout -b "$branch" "$base_ref"
+            git push -u origin "$branch"
+            echo "merged=false" >> $GITHUB_OUTPUT
+            echo "branch=$branch" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - name: Create PR if needed
+        if: steps.try-merge.outputs.merged == 'false'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "Sync from upstream"
+          body: "Automatic sync: update fork from upstream"
+          base: Playerbot
+          head: ${{ steps.try-merge.outputs.branch }}
