@@ -1,6 +1,15 @@
 # Purpose
 - The purpose of this project is to allow a solo player to play through WOTLK 3.3.5a using [azerothcore-wotlk](https://github.com/mod-playerbots/azerothcore-wotlk/tree/Playerbot), specifically with the [mod-playerbots](https://github.com/mod-playerbots/mod-playerbots) module to simulate an active and alive world.
 
+# Local Customizations (Solo Progression)
+- Canonical design doc: `doc/EliteDynamicGearDropsPlan.md`
+- Implemented module: `modules/mod-elite-dynamic-gear/`
+- Goal: all elite mobs (gold + silver rares) can drop *equippable* gear that stays level-appropriate to the zone/content; no out-of-bracket gear (e.g., Durotar elites shouldn’t drop level-40-required items).
+- Current policy (open world): **guaranteed** 1 extra **blue+** (rare/epic) equippable item, up to 2, **additive** on top of existing loot tables.
+- Module config (loaded via `CONFIG_FILE_LIST`): copy `modules/mod-elite-dynamic-gear/conf/mod_elite_dynamic_gear.conf.dist` to `env/dist/etc/modules/mod_elite_dynamic_gear.conf` and restart `worldserver`.
+- Devcontainer build (avoids host deps): `docker compose --profile dev run --rm --no-deps ac-dev-server bash -lc 'cmake -S . -B var/build/dev -DCMAKE_BUILD_TYPE=RelWithDebInfo -DMODULES=static && cmake --build var/build/dev -j"$(nproc)"'`
+  - Note: `docker compose --profile dev up ...` may fail if host ports like `3724` are already in use; prefer `docker compose run` for one-off builds.
+
 # Repository Guidelines
 
 ## Project Structure & Module OrganizationQ

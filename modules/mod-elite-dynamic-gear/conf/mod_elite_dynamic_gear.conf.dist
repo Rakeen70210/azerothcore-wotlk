@@ -1,0 +1,124 @@
+###############################################################################
+# mod-elite-dynamic-gear
+#
+# Adds dynamic, level-appropriate *equippable* gear drops to ALL elite creatures
+# (silver rares + gold elites + bosses) across open world, dungeons, and raids.
+#
+# This module is additive: it adds extra gear rolls on top of existing loot.
+#
+# Config file location after install/build:
+#   configs/modules/mod_elite_dynamic_gear.conf
+#
+###############################################################################
+
+#
+# Enable / Disable
+#
+EliteDynamicGear.Enabled = 1
+
+#
+# Candidate pool filters (pulled from item_template at startup)
+#
+# Exclude items that require a profession/skill (engineering goggles, etc.).
+# Keeping this enabled makes drops more "universally usable" for you + bots.
+EliteDynamicGear.ExcludeRequiredSkillItems = 1
+
+# Exclude specific InventoryType values (comma-separated).
+# Default excludes:
+#   4  = INVTYPE_BODY (shirt)
+#   19 = INVTYPE_TABARD
+EliteDynamicGear.ExcludedInventoryTypes = "4,19"
+
+#
+# Runtime safety
+#
+# How many attempts to try finding a valid item before giving up for that kill.
+EliteDynamicGear.PickAttempts = 25
+
+#
+# Boss tuning
+#
+# BossChanceMultiplier multiplies the base chance for boss-like creatures:
+#   - IsDungeonBoss()
+#   - isWorldBoss() / CREATURE_ELITE_WORLDBOSS
+EliteDynamicGear.BossChanceMultiplier = 1.50
+
+# Adds extra drops (both min and max) for boss-like creatures.
+EliteDynamicGear.BossExtraDropsBonus = 0
+
+#
+# ItemLevel (ilvl) banding
+#
+# The module builds an ilvl "expected range" per RequiredLevel bucket at startup
+# using percentiles over the candidate pool:
+#   [PercentileLow, PercentileHigh]
+#
+# This helps keep gear power close to what "makes sense" for the target level.
+EliteDynamicGear.IlvlBand.PercentileLow = 20
+EliteDynamicGear.IlvlBand.PercentileHigh = 80
+
+# Widen both sides of the computed ilvl band by this amount (optional).
+EliteDynamicGear.IlvlBand.Expand = 0
+
+#
+# WORLD (open world elites)
+#
+#
+# Your requested behavior:
+# - Guaranteed 1 piece of blue (rare) or higher *equippable gear* on every open-world elite kill
+# - Up to 2 pieces maximum
+# - Additive (in addition to existing loot tables)
+EliteDynamicGear.World.ChancePercent = 100.0
+EliteDynamicGear.World.MinDrops = 1
+EliteDynamicGear.World.MaxDrops = 2
+
+# RequiredLevel window around the resolved target level (zone/area DBC level if present, else creature level)
+EliteDynamicGear.World.ReqLevelWindow.Low = 3
+EliteDynamicGear.World.ReqLevelWindow.High = 3
+
+# Quality weights (0..7). Higher weight = more likely.
+# 0 poor, 1 common, 2 uncommon, 3 rare, 4 epic, 5 legendary, 6 artifact, 7 heirloom
+EliteDynamicGear.World.QualityWeight.0 = 0.0
+EliteDynamicGear.World.QualityWeight.1 = 0.0
+EliteDynamicGear.World.QualityWeight.2 = 0.0
+EliteDynamicGear.World.QualityWeight.3 = 10.0
+EliteDynamicGear.World.QualityWeight.4 = 2.0
+EliteDynamicGear.World.QualityWeight.5 = 0.0
+EliteDynamicGear.World.QualityWeight.6 = 0.0
+EliteDynamicGear.World.QualityWeight.7 = 0.0
+
+#
+# DUNGEON (instance elites/bosses)
+#
+EliteDynamicGear.Dungeon.ChancePercent = 35.0
+EliteDynamicGear.Dungeon.MinDrops = 1
+EliteDynamicGear.Dungeon.MaxDrops = 1
+EliteDynamicGear.Dungeon.ReqLevelWindow.Low = 2
+EliteDynamicGear.Dungeon.ReqLevelWindow.High = 2
+
+EliteDynamicGear.Dungeon.QualityWeight.0 = 0.0
+EliteDynamicGear.Dungeon.QualityWeight.1 = 0.5
+EliteDynamicGear.Dungeon.QualityWeight.2 = 8.0
+EliteDynamicGear.Dungeon.QualityWeight.3 = 5.0
+EliteDynamicGear.Dungeon.QualityWeight.4 = 0.5
+EliteDynamicGear.Dungeon.QualityWeight.5 = 0.0
+EliteDynamicGear.Dungeon.QualityWeight.6 = 0.0
+EliteDynamicGear.Dungeon.QualityWeight.7 = 0.0
+
+#
+# RAID (raid elites/bosses)
+#
+EliteDynamicGear.Raid.ChancePercent = 60.0
+EliteDynamicGear.Raid.MinDrops = 1
+EliteDynamicGear.Raid.MaxDrops = 2
+EliteDynamicGear.Raid.ReqLevelWindow.Low = 1
+EliteDynamicGear.Raid.ReqLevelWindow.High = 1
+
+EliteDynamicGear.Raid.QualityWeight.0 = 0.0
+EliteDynamicGear.Raid.QualityWeight.1 = 0.0
+EliteDynamicGear.Raid.QualityWeight.2 = 2.0
+EliteDynamicGear.Raid.QualityWeight.3 = 10.0
+EliteDynamicGear.Raid.QualityWeight.4 = 5.0
+EliteDynamicGear.Raid.QualityWeight.5 = 0.1
+EliteDynamicGear.Raid.QualityWeight.6 = 0.0
+EliteDynamicGear.Raid.QualityWeight.7 = 0.0
