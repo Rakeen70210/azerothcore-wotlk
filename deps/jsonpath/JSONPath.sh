@@ -183,14 +183,14 @@ tokenize() {
   local ESCAPE
   local CHAR
 
-  if echo "test string" | egrep -ao --color=never "test" >/dev/null 2>&1
+  if echo "test string" | grep -Eao --color=never "test" >/dev/null 2>&1
   then
-    GREP='egrep -ao --color=never'
+    GREP='grep -Eao --color=never'
   else
-    GREP='egrep -ao'
+    GREP='grep -Eao'
   fi
 
-  if echo "test string" | egrep -o "test" >/dev/null 2>&1
+  if echo "test string" | grep -Eo "test" >/dev/null 2>&1
   then
     ESCAPE='(\\[^u[:cntrl:]]|\\u[0-9a-fA-F]{4})'
     CHAR='[^[:cntrl:]"\\]'
@@ -208,7 +208,7 @@ tokenize() {
   # Force zsh to expand $A into multiple words
   local is_wordsplit_disabled=$(unsetopt 2>/dev/null | grep -c '^shwordsplit$')
   if [ $is_wordsplit_disabled != 0 ]; then setopt shwordsplit; fi
-  $GREP "$STRING|$NUMBER|$KEYWORD|$SPACE|." | egrep -v "^$SPACE$"
+  $GREP "$STRING|$NUMBER|$KEYWORD|$SPACE|." | grep -Ev "^$SPACE$"
   if [ $is_wordsplit_disabled != 0 ]; then unsetopt shwordsplit; fi
 }
 
@@ -219,14 +219,14 @@ tokenize_path () {
   local ESCAPE
   local CHAR
 
-  if echo "test string" | egrep -ao --color=never "test" >/dev/null 2>&1
+  if echo "test string" | grep -Eao --color=never "test" >/dev/null 2>&1
   then
-    GREP='egrep -ao --color=never'
+    GREP='grep -Eao --color=never'
   else
-    GREP='egrep -ao'
+    GREP='grep -Eao'
   fi
 
-  if echo "test string" | egrep -o "test" >/dev/null 2>&1
+  if echo "test string" | grep -Eo "test" >/dev/null 2>&1
   then
     CHAR='[^[:cntrl:]"\\]'
   else
@@ -249,12 +249,12 @@ tokenize_path () {
   if [ $is_wordsplit_disabled != 0 ]; then setopt shwordsplit; fi
   readarray -t PATHTOKENS < <( echo "$QUERY" | \
     $GREP "$INDEX|$STRING|$WORD|$WILDCARD|$FILTER|$DEEPSCAN|$SET|$INDEXALL|." | \
-    egrep -v "^$SPACE$|^\\.$|^\[$|^\]$|^'$|^\\\$$|^\)$")
+    grep -Ev "^$SPACE$|^\\.$|^\\[$|^\\]$|^'$|^\\\$$|^\\)$")
   [[ $DEBUG -eq 1 ]] && {
-    echo "egrep -o '$INDEX|$STRING|$WORD|$WILDCARD|$FILTER|$DEEPSCAN|$SET|$INDEXALL|.'"
+    echo "grep -Eo '$INDEX|$STRING|$WORD|$WILDCARD|$FILTER|$DEEPSCAN|$SET|$INDEXALL|.'"
     echo -n "TOKENISED QUERY="; echo "$QUERY" | \
       $GREP "$INDEX|$STRING|$WORD|$WILDCARD|$FILTER|$DEEPSCAN|$SET|$INDEXALL|." | \
-      egrep -v "^$SPACE$|^\\.$|^\[$|^\]$|^'$|^\\\$$|^\)$"
+      grep -Ev "^$SPACE$|^\\.$|^\\[$|^\\]$|^'$|^\\\$$|^\\)$"
   }
   if [ $is_wordsplit_disabled != 0 ]; then unsetopt shwordsplit; fi
 }
@@ -800,9 +800,9 @@ filter() {
   [[ $NOCASE -eq 1 ]] && opts+="-i"
   [[ $WHOLEWORD -eq 1 ]] && opts+=" -w"
   if [[ -z $OPERATOR ]]; then
-    egrep $opts "$FILTER"
+    grep -E $opts -- "$FILTER"
   else
-    egrep $opts "$FILTER" | \
+    grep -E $opts -- "$FILTER" | \
       while read line; do
         v=${line#*$tab}
         case $OPERATOR in
@@ -823,7 +823,7 @@ filter() {
                [[ "$v" < "$RHS" ]] && echo "$line"
             ;;
         esac
-      done #< <(egrep $opts "$FILTER")
+      done #< <(grep -E $opts -- "$FILTER")
   fi
 }
 

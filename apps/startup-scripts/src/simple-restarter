@@ -47,6 +47,51 @@ if [ ! -f "$STARTER_SCRIPT" ]; then
     exit 1
 fi
 
+# Preflight: check for missing shared libraries to avoid infinite crash loops
+if command -v ldd >/dev/null 2>&1; then
+    _ldd_out="$(ldd "$BINARY" 2>&1 || true)"
+    _missing_libs="$(echo "$_ldd_out" | awk '$2=="=>" && $3=="not" && $4=="found" {print $1}')"
+    _version_mismatches="$(echo "$_ldd_out" | awk '/version `[^`]+` not found/{print}')"
+
+    if [ -n "$_version_mismatches" ]; then
+        echo "Error: $(basename "$BINARY") has a shared-library symbol version mismatch:"
+        echo "$_version_mismatches" | sed 's/^/  - /'
+        echo
+        echo "This usually happens when the binary was built against a different MySQL client library ABI."
+        echo "Fix: rebuild AzerothCore on this machine (recommended), or install the exact MySQL client runtime it was linked against."
+        echo
+        exit 127
+    fi
+
+    if [ -n "$_missing_libs" ]; then
+        echo "Error: $(basename "$BINARY") is missing required shared libraries:"
+        echo "$_missing_libs" | sed 's/^/  - /'
+        echo
+
+        if echo "$_missing_libs" | grep -qx 'libmysqlclient.so.24'; then
+            if [ -f /etc/os-release ]; then
+                # shellcheck disable=SC1091
+                . /etc/os-release
+            fi
+
+            if [[ "${ID_LIKE:-}" == *arch* ]] || [[ "${ID:-}" == arch ]]; then
+                echo "On Arch-based distros, there is usually no official package that provides Oracle's libmysqlclient.so.24."
+                echo "Recommended fix: install MariaDB client libs and rebuild AzerothCore to link against them:"
+                echo "  sudo pacman -S --needed mariadb-libs"
+                echo "  ./acore.sh compiler build"
+                echo
+                echo "Alternative: install an AUR package that provides the real libmysqlclient.so.24 (Oracle MySQL) runtime."
+            else
+                echo "Install a package that provides libmysqlclient.so.24 (MySQL client runtime libraries),"
+                echo "or rebuild AzerothCore against the client libraries available on your system."
+            fi
+            echo
+        fi
+
+        exit 127
+    fi
+fi
+
 # Main restart loop
 while true; do
     STARTING_TIME=$(date +%s)

@@ -188,20 +188,23 @@ find_path(MYSQL_INCLUDE_DIR
 )
 
 if(UNIX)
-  foreach(LIB ${MYSQL_ADD_LIBRARIES})
-    find_library(MYSQL_LIBRARY
-      NAMES
-        mysql libmysql ${LIB}
-      PATHS
-        ${MYSQL_ADD_LIBRARIES_PATH}
-        /usr/lib
-        /usr/lib/mysql
-        /usr/local/lib
-        /usr/local/lib/mysql
-        /usr/local/mysql/lib
-      DOC "Specify the location of the mysql library here."
-    )
-  endforeach(LIB ${MYSQL_ADD_LIBRARY})
+  # Modern distros typically provide the client library as libmysqlclient.so
+  # (or a compatible implementation), not libmysql.so.
+  find_library(MYSQL_LIBRARY
+    NAMES
+      mysqlclient
+      mysql
+      libmysql
+      ${MYSQL_ADD_LIBRARIES}
+    PATHS
+      ${MYSQL_ADD_LIBRARIES_PATH}
+      /usr/lib
+      /usr/lib/mysql
+      /usr/local/lib
+      /usr/local/lib/mysql
+      /usr/local/mysql/lib
+    DOC "Specify the location of the mysql client library here."
+  )
 endif(UNIX)
 
 if(WIN32)

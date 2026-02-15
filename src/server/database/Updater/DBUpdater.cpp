@@ -50,8 +50,10 @@ bool DBUpdaterUtil::CheckExecutable()
             return true;
         }
 
-        LOG_FATAL("sql.updates", "Didn't find any executable MySQL binary at \'{}\' or in path, correct the path in the *.conf (\"MySQLExecutable\").",
-            absolute(exe).generic_string());
+        LOG_FATAL("sql.updates",
+            "Didn't find any executable MySQL binary at '{}' or in PATH (MySQLExecutable). Found candidate: '{}'.",
+            GetCorrectedMySQLExecutable().empty() ? "<empty>" : GetCorrectedMySQLExecutable(),
+            exe.empty() ? "<none>" : exe.generic_string());
 
         return false;
     }
